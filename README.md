@@ -1,92 +1,403 @@
-# golib-toolkit
+# Golib Toolkit
 
+Go 语言工具集库，提供数据库、对象存储、缓存、加密、验证等常用工具函数和组件。
 
+## 功能特性
 
-## Getting started
+- 🗄️ **数据库支持**: MySQL、PostgreSQL、MongoDB 等主流数据库
+- ☁️ **对象存储**: 阿里云 OSS、腾讯云 COS、AWS S3 等云存储
+- 🔄 **缓存系统**: Redis 客户端，支持分布式锁和发布订阅
+- 🔐 **加密工具**: 哈希、加密、编码解码等安全工具
+- 🎲 **随机生成**: 雪花算法、UUID、NanoID 等唯一 ID 生成
+- 🌍 **国际化**: i18n 多语言支持
+- 📧 **工具函数**: 字符串、数字、时间、类型转换等常用函数
+- 📬 **邮件服务**: SMTP 邮件发送
+- 🌐 **RPC 支持**: gRPC 客户端封装
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 快速开始
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### 安装
 
-## Add your files
+```bash
+# 安装完整工具集
+go get github.com/joepeak/golib-toolkit
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+# 或通过元包安装
+go get github.com/joepeak/golib-toolbox
+```
+
+### 数据库使用
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    
+    "github.com/joepeak/golib-toolkit/database"
+    _ "github.com/joepeak/golib-conf"  // 配置初始化
+)
+
+func main() {
+    // MySQL 连接
+    mysqlDB, err := database.NewMySQL(&database.MySQLConfig{
+        Host:     "localhost",
+        Port:     3306,
+        Database:  "testdb",
+        Username:  "root",
+        Password:  "password",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // 执行查询
+    var users []User
+    err = mysqlDB.Where("age > ?", 18).Find(&users).Error
+    if err != nil {
+        log.Printf("查询失败: %v", err)
+    }
+    
+    // PostgreSQL 连接
+    pgDB, err := database.NewPostgreSQL(&database.PgSQLConfig{
+        Host:     "localhost",
+        Port:     5432,
+        Database:  "testdb",
+        Username:  "postgres",
+        Password:  "password",
+    })
+    
+    // MongoDB 连接
+    mongoDB, err := database.NewMongoDB(&database.MongoConfig{
+        URI:      "mongodb://localhost:27017",
+        Database:  "testdb",
+    })
+}
+```
+
+### 对象存储使用
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "os"
+    
+    "github.com/joepeak/golib-toolkit/oss"
+    _ "github.com/joepeak/golib-conf"
+)
+
+func main() {
+    // 阿里云 OSS
+    aliyunOSS, err := oss.NewAliyunOSS(&oss.AliyunConfig{
+        AccessKeyID:     "your-access-key-id",
+        AccessKeySecret:  "your-access-key-secret",
+        Bucket:          "your-bucket",
+        Endpoint:        "oss-cn-hangzhou.aliyuncs.com",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // 上传文件
+    file, _ := os.Open("test.txt")
+    err = aliyunOSS.Upload("test.txt", file)
+    if err != nil {
+        log.Printf("上传失败: %v", err)
+    }
+    
+    // AWS S3
+    s3, err := oss.NewAWSS3(&oss.AWSConfig{
+        AccessKeyID:     "your-access-key-id",
+        AccessKeySecret:  "your-access-key-secret",
+        Bucket:          "your-bucket",
+        Region:          "us-west-2",
+    })
+    
+    // 腾讯云 COS
+    cos, err := oss.NewTxyunCOS(&oss.TxyunConfig{
+        SecretID:  "your-secret-id",
+        SecretKey: "your-secret-key",
+        Bucket:    "your-bucket",
+        Region:    "ap-guangzhou",
+    })
+}
+```
+
+### Redis 缓存使用
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "time"
+    
+    "github.com/joepeak/golib-toolkit/redisclient"
+    _ "github.com/joepeak/golib-conf"
+)
+
+func main() {
+    // 创建 Redis 客户端
+    client := redisclient.NewClient(&redisclient.RedisConfig{
+        Addr:     "localhost:6379",
+        Password: "",
+        DB:       0,
+        PoolSize:  10,
+    })
+    
+    // 设置缓存
+    err := client.Set("user:123", "张三", time.Hour)
+    if err != nil {
+        log.Printf("设置缓存失败: %v", err)
+    }
+    
+    // 获取缓存
+    var name string
+    err = client.Get("user:123", &name)
+    if err != nil {
+        log.Printf("获取缓存失败: %v", err)
+    } else {
+        log.Printf("用户名: %s", name)
+    }
+    
+    // 分布式锁
+    lock := redisclient.NewLock("user:123:lock", time.Minute*5)
+    err = lock.Lock()
+    if err != nil {
+        log.Printf("获取锁失败: %v", err)
+        return
+    }
+    
+    defer lock.Unlock()
+    
+    // 执行需要加锁的操作
+    log.Println("执行业务逻辑...")
+}
+```
+
+### 工具函数使用
+
+```go
+package main
+
+import (
+    "fmt"
+    
+    "github.com/joepeak/golib-toolkit/convert"
+    "github.com/joepeak/golib-toolkit/rand"
+    "github.com/joepeak/golib-toolkit/snowflake"
+    "github.com/joepeak/golib-toolkit/nanoid"
+    "github.com/joepeak/golib-toolkit/verify"
+)
+
+func main() {
+    // 字符串转换
+    str := "Hello, World!"
+    reversed := convert.Reverse(str)
+    upper := convert.ToUpper(str)
+    
+    // 随机数生成
+    randomInt := rand.Int(1000)
+    randomString := rand.String(10)
+    
+    // 唯一 ID 生成
+    snowflakeID := snowflake.NextID()
+    nanoid := nanoid.Generate()
+    
+    // 数据验证
+    email := "user@example.com"
+    isValid := verify.IsEmail(email)
+    phone := "13812345678"
+    maskedPhone := verify.MaskPhone(phone)
+    
+    fmt.Printf("原字符串: %s\n", str)
+    fmt.Printf("反转后: %s\n", reversed)
+    fmt.Printf("大写: %s\n", upper)
+    fmt.Printf("随机数: %d\n", randomInt)
+    fmt.Printf("随机字符串: %s\n", randomString)
+    fmt.Printf("Snowflake ID: %d\n", snowflakeID)
+    fmt.Printf("NanoID: %s\n", nanoid)
+    fmt.Printf("邮箱有效: %v\n", isValid)
+    fmt.Printf("手机号脱敏: %s\n", maskedPhone)
+}
+```
+
+## 配置
+
+### 数据库配置
+
+```yaml
+database:
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "myapp"
+    username: "root"
+    password: "password"
+    charset: "utf8mb4"
+    
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "myapp"
+    username: "postgres"
+    password: "password"
+    sslmode: "disable"
+    
+  mongodb:
+    uri: "mongodb://localhost:27017"
+    database: "myapp"
+    timeout: 30s
+```
+
+### 对象存储配置
+
+```yaml
+oss:
+  aliyun:
+    access_key_id: "your-access-key-id"
+    access_key_secret: "your-access-key-secret"
+    bucket: "your-bucket"
+    endpoint: "oss-cn-hangzhou.aliyuncs.com"
+    
+  aws:
+    access_key_id: "your-access-key-id"
+    access_key_secret: "your-access-key-secret"
+    bucket: "your-bucket"
+    region: "us-west-2"
+    
+  txyun:
+    secret_id: "your-secret-id"
+    secret_key: "your-secret-key"
+    bucket: "your-bucket"
+    region: "ap-guangzhou"
+```
+
+## 项目结构
 
 ```
-cd existing_repo
-git remote add origin http://120.79.39.252/golib/golib-toolkit.git
-git branch -M main
-git push -uf origin main
+golib-toolkit/
+├── convert/           # 数据转换工具
+│   ├── convert.go
+│   ├── encode.go
+│   ├── math.go
+│   ├── string.go
+│   └── time.go
+├── database/          # 数据库客户端
+│   ├── mysql.go
+│   ├── pqsql.go
+│   └── mongo.go
+├── oss/              # 对象存储
+│   ├── aliyun.go
+│   ├── aws.go
+│   ├── local.go
+│   ├── oss.go
+│   └── txyun.go
+├── redisclient/       # Redis 客户端
+│   ├── locker.go
+│   ├── pubsub.go
+│   └── redisclient.go
+├── rand/             # 随机数生成
+│   └── rand.go
+├── snowflake/         # 雪花算法
+│   └── snowflake.go
+├── nanoid/           # NanoID 生成
+│   └── nanoid.go
+├── verify/           # 数据验证
+│   └── verify.go
+├── i18n/            # 国际化
+│   └── i18n.go
+├── smtp/             # 邮件服务
+│   └── smtp.go
+├── rpc/              # RPC 客户端
+│   └── rpc.go
+├── merkle/           # 默克尔树
+│   └── merkle.go
+├── structure/        # 结构体工具
+│   ├── enter.go
+│   └── type.go
+├── main.go
+├── go.mod
+├── go.sum
+└── README.md
 ```
 
-## Integrate with your tools
+## 依赖
 
-- [ ] [Set up project integrations](http://120.79.39.252/golib/golib-toolkit/-/settings/integrations)
+### 数据库
+- `gorm.io/gorm` - ORM 框架
+- `gorm.io/driver/mysql` - MySQL 驱动
+- `gorm.io/driver/postgres` - PostgreSQL 驱动
+- `go.mongodb.org/mongo-driver/v2` - MongoDB 驱动
 
-## Collaborate with your team
+### 对象存储
+- `github.com/aliyun/aliyun-oss-go-sdk` - 阿里云 OSS
+- `github.com/aws/aws-sdk-go` - AWS S3
+- `github.com/tencentyun/cos-go-sdk-v5` - 腾讯云 COS
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+### 缓存
+- `github.com/redis/go-redis/v9` - Redis 客户端
+- `github.com/go-redsync/redsync/v4` - 分布式锁
 
-## Test and Deploy
+### 其他工具
+- `github.com/matoous/go-nanoid/v2` - NanoID 生成
+- `github.com/sony/sonyflake` - 雪花算法
+- `github.com/nicksnyder/go-i18n/v2` - 国际化
+- `gopkg.in/gomail.v2` - 邮件发送
 
-Use the built-in continuous integration in GitLab.
+## 性能特点
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+- **数据库**: 连接池管理，支持读写分离
+- **对象存储**: 断点续传，并发上传
+- **缓存**: 集群支持，自动重连
+- **工具函数**: 高性能算法，内存优化
 
-***
+## 最佳实践
 
-# Editing this README
+1. **连接管理**: 合理设置连接池大小
+2. **错误处理**: 实现重试和降级机制
+3. **资源释放**: 及时释放数据库连接和文件句柄
+4. **配置管理**: 使用环境变量管理敏感信息
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## 示例项目
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+查看 `examples/` 目录：
 
-## Name
-Choose a self-explaining name for your project.
+- [数据库 CRUD 操作](examples/database-crud/)
+- [文件上传下载](examples/oss-upload/)
+- [缓存使用模式](examples/redis-patterns/)
+- [工具函数集合](examples/utils-collection/)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## 贡献
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+欢迎提交 Issue 和 Pull Request！
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. Fork 本仓库
+2. 创建特性分支: `git checkout -b feature/amazing-feature`
+3. 提交更改: `git commit -m 'Add amazing feature'`
+4. 推送分支: `git push origin feature/amazing-feature`
+5. 提交 Pull Request
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## 许可证
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+MIT License - 详见 [LICENSE](LICENSE) 文件
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## 作者
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+[@joepeak](https://github.com/joepeak)
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 更新日志
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### v0.3.0
+- ✨ 新增 MongoDB 支持
+- 🔧 优化 Redis 连接池
+- 📝 完善工具函数文档
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### v0.2.0
+- 🎉 初始版本发布
+- 📦 数据库和 OSS 基础功能
