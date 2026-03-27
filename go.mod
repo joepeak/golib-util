@@ -5,12 +5,12 @@ go 1.22.0
 toolchain go1.22.12
 
 require (
-	github.com/joepeak/golib-conf v0.3.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/google/uuid v1.6.0
+	github.com/joepeak/golib-conf v0.3.0
 	github.com/matoous/go-nanoid/v2 v2.1.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
