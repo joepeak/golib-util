@@ -410,7 +410,6 @@ func (lm *RedisLockManager) CleanupExpiredLocks(ctx context.Context) error {
 	
 	var cursor uint64
 	var keys []string
-	var totalDeleted int64
 
 	for {
 		var err error
@@ -448,11 +447,10 @@ func (lm *RedisLockManager) CleanupExpiredLocks(ctx context.Context) error {
 		}
 
 		if len(expiredKeys) > 0 {
-			deleted, err := lm.client.Del(ctx, expiredKeys...).Result()
+			_, err := lm.client.Del(ctx, expiredKeys...).Result()
 			if err != nil {
 				return fmt.Errorf("delete expired locks failed: %w", err)
 			}
-			totalDeleted += deleted
 		}
 	}
 

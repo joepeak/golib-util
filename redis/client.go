@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
@@ -50,6 +51,31 @@ func (c *Client) Cache() Cache[any] {
 // LockManager 获取锁管理器
 func (c *Client) LockManager() LockManager {
 	return c.lockMgr
+}
+
+// SimpleLock 创建简单锁（只需要键名）
+func (c *Client) SimpleLock(key string) DistributedLock {
+	return c.lockMgr.NewLock(key,
+		WithExpiration(30*time.Second),
+		WithRetryTimes(3),
+	)
+}
+
+// SimpleLockWithTimeout 创建带超时的简单锁
+func (c *Client) SimpleLockWithTimeout(key string, timeout time.Duration) DistributedLock {
+	return c.lockMgr.NewLock(key,
+		WithExpiration(timeout),
+		WithRetryTimes(3),
+	)
+}
+
+// AutoLock 创建自动续期的锁
+func (c *Client) AutoLock(key string) DistributedLock {
+	return c.lockMgr.NewLock(key,
+		WithExpiration(30*time.Second),
+		WithRetryTimes(3),
+		WithAutoExtend(true),
+	)
 }
 
 // RawClient 获取原始 Redis 客户端
